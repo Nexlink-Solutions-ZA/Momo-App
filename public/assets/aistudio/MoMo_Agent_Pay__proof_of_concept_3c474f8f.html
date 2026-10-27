@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>MoMo Agent Pay: proof of concept</title><meta name="color-scheme" content="light dark">
+<style>
+:root{--bg:#f4f5f7;--cd:#fff;--ln:#dfe3ea;--tx:#12151c;--mu:#5a6372;--y:#FFCC00;--yt:#12151c;--g:#15803d;--a:#b45309;--r:#b91c1c;--ph:#e9ecf1;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a0c10;--cd:#151922;--ln:#262b38;--tx:#f2f3f5;--mu:#9aa1b0;--g:#4ade80;--a:#fbbf24;--r:#f87171;--ph:#0f1218}}
+:root[data-theme="dark"]{--bg:#0a0c10;--cd:#151922;--ln:#262b38;--tx:#f2f3f5;--mu:#9aa1b0;--g:#4ade80;--a:#fbbf24;--r:#f87171;--ph:#0f1218}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 Lato,"Segoe UI",system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--ln)}
+h1{font-size:18px;margin:0 8px 0 0}h2{font-size:14px;margin:0 0 2px}
+.logo{background:var(--y);color:#12151c;font-weight:900;border-radius:6px;padding:2px 8px}
+label.t{display:flex;gap:6px;align-items:center;border:1px solid var(--ln);border-radius:20px;padding:4px 10px;background:var(--cd);cursor:pointer;font-size:13px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--ln);background:var(--cd);color:var(--tx);padding:6px 12px}
+button.p{background:var(--y);color:#12151c;border-color:var(--y);font-weight:700}
+button:focus-visible,input:focus-visible{outline:2px solid var(--y);outline-offset:2px}
+.badge{margin-left:auto;font-size:12px;color:var(--mu);text-align:right}
+main{display:grid;grid-template-columns:minmax(290px,340px) 1fr minmax(260px,340px);gap:14px;padding:14px 16px;align-items:start}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+.col{background:var(--cd);border:1px solid var(--ln);border-radius:12px;padding:12px;min-width:0}
+.tabs{display:flex;gap:6px;margin-bottom:8px}.tabs button{flex:1}.tabs .on{background:var(--y);color:#12151c;border-color:var(--y);font-weight:700}
+.screen{background:var(--ph);border:1px solid var(--ln);border-radius:10px;height:290px;overflow:auto;padding:10px;position:relative}
+.ussd{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.bub{max-width:88%;padding:7px 10px;border-radius:10px;margin:6px 0;background:var(--cd);border:1px solid var(--ln)}.bub.me{margin-left:auto;background:#0b6b4d;color:#fff;border-color:#0b6b4d}
+.row{display:flex;gap:6px;margin-top:8px}input{flex:1;font:inherit;border-radius:8px;border:1px solid var(--ln);padding:7px 10px;background:var(--cd);color:var(--tx);min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.chips button{font-size:12px;padding:3px 9px;border-radius:14px}
+.modal{position:absolute;inset:auto 0 0 0;background:var(--cd);border-top:2px solid var(--y);padding:12px;border-radius:12px 12px 0 0;box-shadow:0 -6px 20px #0004}
+.bar{height:8px;border-radius:4px;background:var(--ln);overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;background:var(--y)}
+.card{border:1px solid var(--ln);border-left:5px solid var(--g);border-radius:10px;padding:10px;margin-bottom:10px}
+.card.STEP{border-left-color:var(--a)}.card.BLOCKED{border-left-color:var(--r)}
+.top{display:flex;justify-content:space-between;gap:8px;font-weight:700}
+.chip{font-size:12px;font-weight:800;border-radius:6px;padding:2px 8px;border:1px solid currentColor}
+.SETTLED{color:var(--g)}.STEP{color:var(--a)}.BLOCKED{color:var(--r)}
+.why{display:inline-block;font-size:12px;border:1px solid var(--ln);border-radius:6px;padding:1px 7px;margin:4px 4px 0 0;color:var(--mu)}
+.log{font:12px/1.35 ui-monospace,Menlo,monospace;max-height:620px;overflow:auto}.log div{padding:4px 0;border-bottom:1px solid var(--ln);overflow-wrap:anywhere}
+.mu{color:var(--mu);font-size:12px}.ok{color:var(--g);font-weight:700}.bad{color:var(--r);font-weight:700}
+</style></head><body>
+<header><span class="logo">A</span><h1>MoMo Agent Pay</h1>
+<label class="t"><input type="checkbox" id="sim" style="flex:none"> SIM swapped yesterday</label>
+<label class="t"><input type="checkbox" id="night" style="flex:none"> Night 02:00</label>
+<label class="t"><input type="checkbox" id="dev" style="flex:none"> New device</label>
+<button id="next" class="p"></button><button id="replay">Replay last payment</button><button id="reset">Reset</button>
+<div class="badge"><b>MoMo: mock (in this browser)</b><br>USSD, SIM-swap and PIN screens are emulated. Demo PIN 1234.</div></header>
+<main>
+<section class="col"><div class="tabs"><button id="tU">USSD</button><button id="tC" class="on">Chat</button></div><div class="screen" id="scr"></div><div id="inp"></div>
+<div style="margin-top:12px"><h2>Her permission</h2><div id="perm" class="mu">No permission granted yet. Open the USSD tab.</div></div></section>
+<section class="col"><h2>What the agent asked to pay</h2><div class="mu" style="margin-bottom:10px">Every proposal, and what the mandate service decided. <span id="tot"></span></div><div id="feed"><div class="mu">Nothing yet. Grant a permission, then ask the agent to pay.</div></div></section>
+<section class="col"><h2>Audit log</h2><div class="mu" style="margin-bottom:6px">Append-only, hash-chained. Written before MoMo is called.</div><button id="ver">Verify chain</button> <span id="vr"></span><div class="log" id="log"></div></section>
+</main>
+<script>
+const $=s=>document.querySelector(s),P={electricity:['Prepaid electricity (City Power)','Electricity'],airtime:['Airtime for Mama','Airtime'],school:['Thuto Primary school fees','School'],stokvel:['Stokvel contribution','Stokvel'],spaza:['Kasi Fresh spaza','Spaza']};
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let S,tab='C',dlg=false;
+const SC=['Grant the permission by USSD','Pay R200 electricity (first payment, asks for PIN)','Pay R150 electricity (settles)','SIM swapped, pay R300 school fees (blocked)','Say STOP'];
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(x=>x.toString(16).padStart(2,'0')).join('');
+function init(){S={m:null,spent:0,known:new Set(),paid:[],feed:[],log:[],last:null,step:0,prev:'0',pend:null,chat:[{a:1,t:'Hi Nomsa. Once you give me a permission I can pay your bills inside your limits. Try “pay R200 electricity”.'}]};['sim','night','dev'].forEach(i=>$('#'+i).checked=false);$('#vr').textContent='';dlg=false;render()}
+async function log(who,ev,d){const t=new Date().toLocaleTimeString('en-GB'),h=await sha(S.prev+who+ev+d+t);S.log.push({who,ev,d,t,h,p:S.prev});S.prev=h}
+const say=t=>{S.chat.push({a:1,t});render()};
+async function grant(){S.m={tx:500,mo:1000,cats:['Electricity','Airtime','School','Stokvel'],on:true,until:'24 Jan 2027'};await log('NOMSA','mandate.granted','via ussd, R500 per payment, R1000 per month, 90 days');await log('MOMO','momo.preapproval.successful','mock pre-approval, 90 days');dlg=false;say('Permission set. I can pay electricity, airtime, school and stokvel inside your limits. Reply STOP to switch me off.')}
+async function propose(k,amt){const[n,cat]=P[k],m=S.m;S.last={k,amt};await log('AGENT','payment.proposed','R'+amt+' '+n);
+const card={n,amt,k,why:[],txn:'',lab:''};const blk=async(w,hard)=>{card.d='BLOCKED';card.risk=hard?null:w[1];card.rule=hard?w:null;card.why=hard?[]:w[0];S.feed.unshift(card);await log('SERVICE','payment.blocked',hard?'rule: '+w:'risk '+w[1].toFixed(2)+' '+w[0].join('; '));say(hard?`I cannot pay R${amt} to ${n}: ${w} Your limits stay as you set them.`:`I stopped R${amt} to ${n}. ${w[0].join('. ')}. Your money has not moved.`)};
+if(!m||!m.on)return blk('you have not given me a permission, or it is switched off.',1);
+if(!m.cats.includes(cat))return blk('you have not allowed me to pay this kind of payee.',1);
+if(amt>m.tx)return blk(`that is above your R${m.tx} per-payment limit.`,1);
+if(S.spent+amt>m.mo)return blk('that would go over your monthly limit.',1);
+const first=!S.known.has(k);let sc=.05+.03*amt/m.tx;const w=[];
+if(first){sc+=.2;w.push('It is the first payment to this payee')}
+if($('#sim').checked){sc+=.6;w.push('Your SIM card was changed recently')}
+if($('#night').checked){sc+=.25;w.push('It is the middle of the night')}
+if($('#dev').checked){sc+=.2;w.push('This is a new device')}
+if(S.paid.filter(t=>Date.now()-t<36e5).length>=3){sc+=.15;w.push('There have been many payments in the last hour')}
+sc=Math.min(.99,sc);card.risk=sc;card.why=w;
+if(sc>=.7)return blk([w,sc]);
+if(first||sc>=.25){S.pend={k,amt,card,sc};tab='C';return render()}
+settle(card,sc,'Within limits, low risk')}
+async function settle(card,sc,lab){const m=S.m;card.d='SETTLED';card.lab=lab;card.txn='mock-'+Date.now();await log('SERVICE','payment.submitted','risk '+sc.toFixed(2)+' settle');S.spent+=card.amt;S.known.add(card.k);S.paid.push(Date.now());S.feed.unshift(card);await log('MOMO','payment.settled',card.txn);say(`Paid R${card.amt} to ${card.n}. R${m.mo-S.spent} left this month. Reply STOP to pause me.`)}
+async function pin(v){const p=S.pend;if(v!=='1234'){S.err='Wrong PIN. Demo PIN is 1234.';return render()}S.err='';S.pend=null;await log('NOMSA','pin.confirmed','first payment to payee');settle(p.card,p.sc,'Nomsa approved with PIN')}
+async function decline(){const p=S.pend;S.pend=null;p.card.d='BLOCKED';p.card.rule='Nomsa declined the PIN request.';S.feed.unshift(p.card);await log('NOMSA','pin.declined',p.card.n);say('Okay, I did not pay.')}
+async function send(t){t=t.trim();if(!t)return;S.chat.push({a:0,t});if(/^stop$/i.test(t)){if(S.m)S.m.on=false;await log('NOMSA','mandate.revoked','STOP');return say('Done. I am switched off and cannot pay anything. Dial *130*AGENT# to switch me on again.')}
+if(/^status$/i.test(t))return say(S.m&&S.m.on?`Spent R${S.spent} of R${S.m.mo} this month.`:'I am switched off.');
+const x=t.match(/pay\s+r?(\d+)\s+(\w+)/i);if(x&&P[x[2].toLowerCase()])return propose(x[2].toLowerCase(),+x[1]);say('I can pay electricity, airtime, school or stokvel. Try “pay R150 electricity”.')}
+async function next(){const i=S.step;if(i>=SC.length)return;S.step++;if(i==0){tab='U';dlg=true;render()}else if(i==1)await propose('electricity',200);else if(i==2)await propose('electricity',150);else if(i==3){$('#sim').checked=true;await propose('school',300)}else await send('STOP');render()}
+async function verify(){let p='0',ok=1;for(const e of S.log){if(e.p!==p||e.h!==await sha(p+e.who+e.ev+e.d+e.t)){ok=0;break}p=e.h}$('#vr').innerHTML=ok?`<span class="ok">Chain intact (${S.log.length} entries)</span>`:'<span class="bad">Chain broken</span>'}
+function render(){$('#tU').className=tab=='U'?'on':'';$('#tC').className=tab=='C'?'on':'';const sc=$('#scr'),ip=$('#inp');
+if(tab=='U'){sc.className='screen ussd';sc.innerHTML=dlg?`<p>Allow Household Agent to pay electricity, airtime, school, stokvel up to R1000 a month, max R500 per payment, for 90 days?<br>Enter MoMo PIN to confirm. You can revoke any time.</p>`:'<p>Dial *130*AGENT# to give your Household Agent a permission.</p>';ip.innerHTML=dlg?`<div class="row"><input id="up" type="password" inputmode="numeric" placeholder="PIN" aria-label="MoMo PIN"><button class="p" id="us">Send</button></div><div class="mu">${esc(S.err||'')}</div>`:'<div class="row"><button class="p" id="ud">Dial *130*AGENT#</button></div>';
+const us=$('#us');if(us)us.onclick=()=>{if($('#up').value==='1234'){S.err='';grant().then(render)}else{S.err='Wrong PIN. Demo PIN is 1234.';render()}};const ud=$('#ud');if(ud)ud.onclick=()=>{dlg=true;render()}}
+else{sc.className='screen';sc.innerHTML=S.chat.map(c=>`<div class="bub ${c.a?'':'me'}">${esc(c.t)}</div>`).join('')+(S.pend?`<div class="modal"><b>Approve R${S.pend.amt} to ${esc(S.pend.card.n)}?</b><div class="mu">Your agent is asking${S.pend.card.why.length?': '+esc(S.pend.card.why.join('. ')):''}.</div><div class="row"><input id="pp" type="password" inputmode="numeric" placeholder="PIN" aria-label="PIN"><button id="pd">Decline</button><button class="p" id="pa">Approve</button></div><div class="mu">${esc(S.err||'')}</div></div>`:'');sc.scrollTop=1e5;
+ip.innerHTML=`<div class="row"><input id="ci" placeholder="Message" aria-label="Message"><button class="p" id="cs">Send</button></div><div class="chips">${['pay R150 electricity','pay R300 school','pay R100 spaza','status','STOP'].map(c=>`<button>${c}</button>`).join('')}</div>`;
+const go=()=>{const v=$('#ci').value;$('#ci').value='';send(v)};$('#cs').onclick=go;$('#ci').onkeydown=e=>{if(e.key=='Enter')go()};ip.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>send(b.textContent));
+if(S.pend){$('#pa').onclick=()=>pin($('#pp').value);$('#pd').onclick=decline}}
+const m=S.m,pc=m?Math.min(100,S.spent/m.mo*100):0;$('#perm').innerHTML=m?`<b>${m.on?'Active':'Switched off'}</b> · Spent <b>R${S.spent}</b> of R${m.mo} this month<div class="bar"><i style="width:${pc}%"></i></div><span class="mu">Up to R${m.tx} a payment · Left R${m.mo-S.spent} · Until ${m.until}<br>${m.cats.join(', ')}</span>`:'No permission granted yet. Open the USSD tab.';
+const paid=S.feed.filter(f=>f.d=='SETTLED').reduce((a,f)=>a+f.amt,0),stp=S.feed.filter(f=>f.d=='BLOCKED').reduce((a,f)=>a+f.amt,0);$('#tot').innerHTML=`Paid <b>R${paid}</b> · Stopped <b>R${stp}</b>`;
+$('#feed').innerHTML=S.feed.length?S.feed.map(f=>`<div class="card ${f.d=='BLOCKED'?'BLOCKED':''}"><div class="top"><span>${esc(f.n)}</span><span>R${f.amt}</span></div><div class="mu">${f.d=='SETTLED'?esc(f.lab)+' · risk '+f.risk.toFixed(2)+' · '+f.txn:f.rule?esc(f.rule):'Stopped by the risk agent · risk '+f.risk.toFixed(2)}</div><span class="chip ${f.d}">${f.d}</span>${f.d=='BLOCKED'&&!f.rule?'':''}<div>${f.why.map(w=>`<span class="why">${esc(w)}</span>`).join('')}</div>${f.d=='BLOCKED'?`<div class="bad" style="margin-top:6px">R${f.amt} never left her wallet. MoMo was never called.</div>`:''}</div>`).join(''):'<div class="mu">Nothing yet. Grant a permission, then ask the agent to pay.</div>';
+$('#log').innerHTML=S.log.slice().reverse().map((e,i)=>`<div><b>${esc(e.who)}</b> ${esc(e.ev)}<br><span class="mu">${e.t} · ${esc(e.d)} · #${e.h.slice(0,8)}</span></div>`).join('');
+$('#next').textContent=S.step<SC.length?'Next scene: '+SC[S.step]:'Scenes complete';$('#next').disabled=S.step>=SC.length}
+$('#tU').onclick=()=>{tab='U';render()};$('#tC').onclick=()=>{tab='C';render()};$('#next').onclick=next;$('#ver').onclick=verify;$('#reset').onclick=init;$('#replay').onclick=()=>S.last&&propose(S.last.k,S.last.amt);
+init();
+</script></body></html>

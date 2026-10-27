@@ -1,0 +1,6 @@
+{
+  "name": "MoMo Agent Pay — AI Mandate & Risk Layer",
+  "description": "MTN Group Technology Hackathon 2026: A consent, mandate and risk layer enabling AI agents to pay safely on MTN MoMo with USSD authorization, real-time risk evaluation, and cryptographic audit trails.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
